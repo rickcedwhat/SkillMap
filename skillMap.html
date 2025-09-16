@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software Engineering Skill Map</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+        }
+        .map-container {
+            touch-action: none;
+        }
+        svg {
+            cursor: grab;
+        }
+        .skill-node {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .ctrl-pressed .skill-node[data-draggable="true"] {
+            cursor: grab;
+        }
+        .skill-node[data-draggable="true"].grabbing {
+            cursor: grabbing;
+        }
+        .skill-node rect {
+            transition: all 0.2s ease-in-out;
+        }
+        .skill-node[data-draggable="true"]:hover rect {
+            transform: scale(1.05);
+            stroke-width: 3.5px;
+        }
+        .skill-node[data-draggable="true"]:hover .skill-label {
+            font-weight: 700;
+            fill: #000;
+        }
+        .skill-label {
+            font-size: 14px;
+            fill: #393939;
+            text-anchor: middle;
+            pointer-events: none;
+            -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+        }
+        .link {
+            fill: none;
+            stroke: #4B5563;
+            stroke-width: 2px;
+        }
+        .modal-content a { color: #3B82F6; text-decoration: underline; }
+        .modal-content a:hover { color: #2563EB; }
+        kbd {
+            background-color: #374151; border-radius: 4px; border: 1px solid #4B5563;
+            color: #D1D5DB; display: inline-block; font-size: 0.8em; font-weight: 600;
+            line-height: 1; padding: 3px 5px; white-space: nowrap;
+        }
+        /* Style for the JSON editor textarea */
+        #json-editor {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            background-color: #1f2937;
+            color: #d1d5db;
+            border: 1px solid #4b5563;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-blue-900 text-gray-800 antialiased">
+    <div id="app" class="relative w-screen h-screen overflow-hidden flex flex-col">
+        
+        <header class="absolute top-0 left-0 right-0 z-20 p-4 bg-black/30 backdrop-blur-sm shadow-lg">
+            <div class="container mx-auto flex justify-between items-center">
+                <div>
+                    <h1 class="text-xl font-bold text-gray-100">Software Engineering Skill Map</h1>
+                    <p class="text-sm text-gray-300">A visual skill tree. Hold <kbd class="font-sans">Ctrl</kbd> to drag individual skills.</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="edit-tree-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition-transform transform hover:scale-105">Edit Tree</button>
+                    <button id="zoom-in" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition-transform transform hover:scale-105">+</button>
+                    <button id="zoom-out" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition-transform transform hover:scale-105">-</button>
+                    <button id="reset-zoom" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition-transform transform hover:scale-105">Reset View</button>
+                </div>
+            </div>
+        </header>
+
+        <main id="map-container" class="flex-grow map-container bg-transparent"></main>
+
+        <div id="skill-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto transform transition-all scale-95 opacity-0">
+                <div class="p-6 sticky top-0 bg-white border-b border-gray-200">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 id="modal-title" class="text-2xl font-bold text-gray-900"></h2>
+                            <div id="modal-proficiency-container" class="flex items-center space-x-2 mt-1">
+                                <div id="modal-stars" class="flex"></div>
+                                <span id="modal-proficiency-label" class="text-sm font-medium text-gray-600"></span>
+                            </div>
+                        </div>
+                        <button id="close-modal" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+                    </div>
+                </div>
+                <div class="p-6 modal-content space-y-4">
+                    <p id="modal-blurb" class="text-gray-700 leading-relaxed"></p>
+                    <div id="modal-projects-container">
+                        <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-2">Projects & Examples:</h3>
+                        <ul id="modal-projects" class="list-disc list-inside space-y-2"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="json-editor-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4">
+            <div class="bg-gray-800 text-gray-200 rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col transform transition-all scale-95 opacity-0">
+                <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                    <h2 class="text-xl font-bold">Edit Skill Tree JSON</h2>
+                    <button id="close-editor-modal" class="text-gray-400 hover:text-gray-200 text-2xl font-bold">&times;</button>
+                </div>
+                <div class="p-4 flex-grow flex flex-col">
+                    <textarea id="json-editor" class="w-full h-full p-3 rounded-md resize-none"></textarea>
+                    <p id="json-error-msg" class="text-red-400 text-sm mt-2 hidden"></p>
+                </div>
+                <div class="p-4 border-t border-gray-700 flex justify-between items-center">
+                    <button id="reset-to-default-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-sm">Reset to Default</button>
+                    <div>
+                        <button id="cancel-edit-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-sm mr-2">Cancel</button>
+                        <button id="save-json-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-sm">Save & Redraw</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+
+        
+        const POSITIONS_STORAGE_KEY = 'skillMapPositions';
+        const SKILL_TREE_STORAGE_KEY = 'skillTreeData'; // ADDED: Key for storing tree data
+        let skillTreeData; 
+        
+        // This async function will fetch the default data and start the application
+        async function initializeApp() {
+            try {
+                // Fetch the default data from the JSON file
+                const response = await fetch('./skillTreeData.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const defaultSkillTreeData = await response.json();
+
+                // Now, try to load data from localStorage or use the fetched default
+                const savedData = localStorage.getItem(SKILL_TREE_STORAGE_KEY);
+                if (savedData) {
+                    skillTreeData = JSON.parse(savedData);
+                } else {
+                    skillTreeData = defaultSkillTreeData;
+                }
+
+                // Finally, draw the map with the loaded data
+                drawMap();
+
+            } catch (error) {
+                console.error("Failed to load or initialize skill tree:", error);
+                // Optionally, display an error message to the user on the page
+                document.getElementById('map-container').innerHTML = `<div class="text-red-400 p-8 text-center">Failed to load skill tree data. Please check the console for errors.</div>`;
+            }
+        }
+
+        const proficiencyConfig = {
+            0: { label: "No Experience", strokeWidth: '1.5px', strokeDash: '3,3' },
+            1: { label: "Learning",      strokeWidth: '2px',   strokeDash: 'none' },
+            2: { label: "Familiar",      strokeWidth: '2.5px', strokeDash: 'none' },
+            3: { label: "Proficient",    strokeWidth: '3px',   strokeDash: 'none' },
+            4: { label: "Advanced",      strokeWidth: '3.5px', strokeDash: 'none' },
+            5: { label: "Expert",        strokeWidth: '4px',   strokeDash: 'none' },
+        };
+
+        const container = document.getElementById('map-container');
+        let width = container.clientWidth;
+        let height = container.clientHeight;
+        let simulation;
+
+        const svg = d3.select("#map-container").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const g = svg.append("g");
+        
+        const zoom = d3.zoom()
+            .scaleExtent([0.3, 3])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+        
+        svg.call(zoom);
+
+        function drawMap() {
+            if (!skillTreeData) return;
+            g.selectAll("*").remove(); 
+            
+            const root = d3.hierarchy(skillTreeData);
+            const nodesData = root.descendants();
+            const linksData = root.links();
+            
+            const storedPositions = JSON.parse(localStorage.getItem(POSITIONS_STORAGE_KEY) || '{}');
+            nodesData.forEach(d => {
+                if (storedPositions[d.data.name]) {
+                    d.fx = storedPositions[d.data.name].x;
+                    d.fy = storedPositions[d.data.name].y;
+                }
+            });
+
+            const link = g.append("g").attr("class", "links").selectAll("line")
+                .data(linksData).join("line").attr("class", "link");
+
+            const node = g.append("g").attr("class", "nodes").selectAll("g")
+                .data(nodesData).join("g")
+                .attr('class', 'skill-node')
+                .attr('data-draggable', d => d.depth > 0);
+
+            node.append('text').attr('class', 'skill-label').attr('dy', '0.3em').text(d => d.data.name);
+            
+            node.each(function(d) {
+                const textNode = d3.select(this).select('text');
+                let paddingX, paddingY, fontSize;
+
+                if (d.depth === 0) {
+                    fontSize = 24; paddingX = 25; paddingY = 20;
+                    textNode.style('font-size', `${fontSize}px`).style('font-weight', 'bold');
+                } else {
+                    fontSize = 14; paddingX = 20; paddingY = 15;
+                    textNode.style('font-size', `${fontSize}px`).style('font-weight', '600');
+                }
+                
+                const newBbox = textNode.node().getBBox();
+                d.width = newBbox.width + paddingX * 2;
+                d.height = newBbox.height + paddingY * 2;
+                d.radius = Math.max(d.width, d.height) / 2 + 10; 
+            });
+
+            node.insert('rect', 'text')
+                .style('stroke', d => d.data.color || '#9CA3AF')
+                .style('stroke-width', d => d.data.proficiency != null ? proficiencyConfig[d.data.proficiency].strokeWidth : '2px')
+                .style('stroke-dasharray', d => d.data.proficiency != null ? proficiencyConfig[d.data.proficiency].strokeDash : 'none')
+                .style('fill', d => d.data.color || 'rgb(221 232 255)')
+                .attr('rx', 10).attr('ry', 10)
+                .attr('width', d => d.width).attr('height', d => d.height)
+                .attr('x', d => -d.width / 2).attr('y', d => -d.height / 2);
+
+            node.on('click', (event, d) => {
+                if (event.ctrlKey) return;
+                if (d.data.proficiency == null) return;
+                openModal(d.data);
+            });
+
+            simulation = d3.forceSimulation(nodesData)
+                .force("link", d3.forceLink(linksData).id(d => d.data.name).distance(d => d.target.depth === 1 ? 200 : 100).strength(0.8))
+                .force("charge", d3.forceManyBody().strength(-1500))
+                .force("center", d3.forceCenter(0, 0))
+                .force("collide", d3.forceCollide().radius(d => d.radius + 15).iterations(2));
+
+            for (let i = 0; i < 120; ++i) simulation.tick();
+
+            link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+            node.attr("transform", d => `translate(${d.x}, ${d.y})`);
+
+            const drag = d3.drag().filter(event => event.ctrlKey)
+                .on("start", dragstarted).on("drag", dragged).on("end", dragended);
+            node.call(drag);
+
+            simulation.on("tick", () => {
+                link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+                node.attr("transform", d => `translate(${d.x}, ${d.y})`);
+            });
+
+            function dragstarted(event, d) {
+                event.sourceEvent.stopPropagation();
+                d3.select(this).raise().classed('grabbing', true);
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x; d.fy = d.y;
+            }
+            function dragged(event, d) {
+                d.fx = event.x; d.fy = event.y;
+            }
+            function dragended(event, d) {
+                d3.select(this).classed('grabbing', false);
+                if (!event.active) simulation.alphaTarget(0);
+                const currentPositions = JSON.parse(localStorage.getItem(POSITIONS_STORAGE_KEY) || '{}');
+                currentPositions[d.data.name] = { x: d.fx, y: d.fy };
+                localStorage.setItem(POSITIONS_STORAGE_KEY, JSON.stringify(currentPositions));
+            }
+
+            function zoomToFit() {
+                const bounds = g.node().getBBox();
+                if (bounds.width === 0 || bounds.height === 0) return; // Avoid error on empty graph
+                const fullWidth = width; const fullHeight = height;
+                const midX = bounds.x + bounds.width / 2;
+                const midY = bounds.y + bounds.height / 2;
+                const scale = Math.min(fullWidth / bounds.width, fullHeight / bounds.height) * 0.9;
+                const translateX = fullWidth / 2 - scale * midX;
+                const translateY = fullHeight / 2 - scale * midY;
+                const initialTransform = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
+                svg.transition().duration(750).call(zoom.transform, initialTransform);
+            }
+            zoomToFit();
+        }
+        
+        // --- Skill Modal Logic ---
+        const skillModal = document.getElementById('skill-modal');
+        const skillModalContent = skillModal.querySelector('.transform');
+        const modalTitle = document.getElementById('modal-title');
+        const modalStars = document.getElementById('modal-stars');
+        const modalProficiencyLabel = document.getElementById('modal-proficiency-label');
+        const modalBlurb = document.getElementById('modal-blurb');
+        const modalProjects = document.getElementById('modal-projects');
+        const projectsContainer = document.getElementById('modal-projects-container');
+        
+        function openModal(skill) {
+            modalTitle.textContent = skill.name;
+            const config = proficiencyConfig[skill.proficiency];
+            modalProficiencyLabel.textContent = config.label;
+            
+            modalStars.innerHTML = '';
+            const totalStars = 5;
+            const filledStarSVG = `<svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>`;
+            const emptyStarSVG = `<svg class="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>`;
+            for (let i = 1; i <= totalStars; i++) {
+                modalStars.innerHTML += (i <= skill.proficiency) ? filledStarSVG : emptyStarSVG;
+            }
+
+            modalBlurb.textContent = skill.blurb || "No description provided.";
+            modalProjects.innerHTML = '';
+            if (skill.projects && skill.projects.length > 0) {
+                projectsContainer.classList.remove('hidden');
+                skill.projects.forEach(project => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<a href="${project.url}" target="_blank" rel="noopener noreferrer">${project.name}</a>`;
+                    modalProjects.appendChild(li);
+                });
+            } else {
+                projectsContainer.classList.add('hidden');
+            }
+            
+            skillModal.classList.remove('hidden'); skillModal.classList.add('flex');
+            setTimeout(() => { skillModalContent.classList.remove('scale-95', 'opacity-0'); }, 10);
+        }
+
+        function closeModal() {
+            skillModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                skillModal.classList.add('hidden'); skillModal.classList.remove('flex');
+            }, 200);
+        }
+
+        // --- ADDED: JSON Editor Modal Logic ---
+        const editorModal = document.getElementById('json-editor-modal');
+        const editorModalContent = editorModal.querySelector('.transform');
+        const jsonEditor = document.getElementById('json-editor');
+        const jsonErrorMsg = document.getElementById('json-error-msg');
+
+        function openEditorModal() {
+            jsonErrorMsg.classList.add('hidden');
+            jsonEditor.value = JSON.stringify(skillTreeData, null, 2); // Pretty print JSON
+            editorModal.classList.remove('hidden'); editorModal.classList.add('flex');
+            setTimeout(() => { editorModalContent.classList.remove('scale-95', 'opacity-0'); }, 10);
+        }
+
+        function closeEditorModal() {
+            editorModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                editorModal.classList.add('hidden'); editorModal.classList.remove('flex');
+            }, 200);
+        }
+
+        document.getElementById('edit-tree-btn').addEventListener('click', openEditorModal);
+        document.getElementById('close-editor-modal').addEventListener('click', closeEditorModal);
+        document.getElementById('cancel-edit-btn').addEventListener('click', closeEditorModal);
+
+        document.getElementById('save-json-btn').addEventListener('click', () => {
+            try {
+                const newData = JSON.parse(jsonEditor.value);
+                skillTreeData = newData; // Update the global variable
+                localStorage.setItem(SKILL_TREE_STORAGE_KEY, JSON.stringify(newData));
+                localStorage.removeItem(POSITIONS_STORAGE_KEY); // Reset positions as the tree might have changed
+                drawMap();
+                closeEditorModal();
+            } catch (error) {
+                jsonErrorMsg.textContent = `Error: Invalid JSON format. ${error.message}`;
+                jsonErrorMsg.classList.remove('hidden');
+            }
+        });
+        
+        document.getElementById('reset-to-default-btn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset to the default skill tree? All your custom changes will be lost.')) {
+                localStorage.removeItem(SKILL_TREE_STORAGE_KEY);
+                localStorage.removeItem(POSITIONS_STORAGE_KEY);
+                location.reload();
+            }
+        });
+
+
+        // --- General Event Listeners ---
+        document.getElementById('close-modal').addEventListener('click', closeModal);
+        skillModal.addEventListener('click', (e) => {
+            if (e.target === skillModal) closeModal();
+        });
+        
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            svg.transition().duration(200).call(zoom.scaleBy, 1.2);
+        });
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            svg.transition().duration(200).call(zoom.scaleBy, 0.8);
+        });
+        document.getElementById('reset-zoom').addEventListener('click', () => {
+            localStorage.removeItem(POSITIONS_STORAGE_KEY);
+            drawMap();
+        });
+
+        window.addEventListener('resize', () => {
+            width = container.clientWidth; height = container.clientHeight;
+            svg.attr("width", width).attr("height", height);
+            if (simulation) {
+                simulation.force("center", d3.forceCenter(0, 0));
+                simulation.alpha(0.3).restart();
+            }
+        });
+        
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'Control') svg.node().classList.add('ctrl-pressed');
+        });
+        window.addEventListener('keyup', (event) => {
+            if (event.key === 'Control') svg.node().classList.remove('ctrl-pressed');
+        });
+
+        // // --- Initial Load ---
+        // loadSkillTreeData();
+        // drawMap();
+        initializeApp(); // Start the app by fetching data and drawing the map
+
+    </script>
+</body>
+</html>

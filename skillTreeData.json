@@ -1,0 +1,198 @@
+{
+  "name": "Software Engineering",
+  "children": [
+    {
+      "name": "Frontend",
+      "color": "#4ade80",
+      "children": [
+        {
+          "name": "JavaScript (ES6+)",
+          "proficiency": 4,
+          "blurb": "Expert in modern JavaScript for building complex, interactive single-page applications.",
+          "projects": [
+            {
+              "name": "VIP Homework Dashboard",
+              "url": "https://github.com/rickcedwhat/your-repo-link"
+            }
+          ],
+          "children": [
+            {
+              "name": "React",
+              "proficiency": 4,
+              "blurb": "Proficient in building complex, stateful applications using modern React features like Hooks and the Context API.",
+              "projects": [
+                {
+                  "name": "VIP Homework Dashboard",
+                  "url": "https://github.com/rickcedwhat/your-repo-link"
+                },
+                {
+                  "name": "Polyglot Wordle",
+                  "url": "https://polyglot-wordle.web.app/"
+                }
+              ],
+              "children": [
+                {
+                  "name": "State Management",
+                  "proficiency": 3,
+                  "blurb": "Skilled in managing application state using the Context API for localized state and TanStack Query for complex server-state.",
+                  "projects": [
+                    {
+                      "name": "Polyglot Wordle",
+                      "url": "https://polyglot-wordle.web.app/"
+                    }
+                  ]
+                },
+                {
+                  "name": "UI Libraries",
+                  "proficiency": 4,
+                  "blurb": "Experienced with various component libraries to accelerate UI development and ensure consistency.",
+                  "projects": [],
+                  "children": [
+                    {
+                      "name": "Material UI (MUI)",
+                      "proficiency": 3,
+                      "blurb": "Built applications following Material Design principles using MUI.",
+                      "projects": [
+                        {
+                          "name": "VIP Homework Dashboard",
+                          "url": "https://github.com/rickcedwhat/your-repo-link"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Mantine UI",
+                      "proficiency": 3,
+                      "blurb": "Used Mantine for its rich set of hooks and components.",
+                      "projects": [
+                        {
+                          "name": "Polyglot Wordle",
+                          "url": "https://polyglot-wordle.web.app/"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "TypeScript",
+              "proficiency": 4,
+              "blurb": "Proficient in building type-safe applications and migrating JavaScript codebases.",
+              "projects": [
+                {
+                  "name": "Polyglot Wordle",
+                  "url": "https://polyglot-wordle.web.app/"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "HTML5 & CSS3",
+          "proficiency": 4,
+          "blurb": "Deep understanding of semantic HTML, accessibility (ARIA), and modern CSS layouts like Flexbox and Grid.",
+          "projects": []
+        }
+      ]
+    },
+    {
+      "name": "Testing & QA",
+      "color": "#f87171",
+      "children": [
+        {
+          "name": "Java Test Automation",
+          "proficiency": 4,
+          "blurb": "Deep experience in building robust automation frameworks in a Java ecosystem.",
+          "projects": [],
+          "children": [
+            {
+              "name": "Selenium & TestNG",
+              "proficiency": 4,
+              "blurb": "Expert in browser automation and managing complex test suites.",
+              "projects": []
+            },
+            {
+              "name": "Cucumber (BDD)",
+              "proficiency": 3,
+              "blurb": "Experienced in writing feature files and step definitions for Behavior-Driven Development.",
+              "projects": []
+            },
+            {
+              "name": "Katalon Studio",
+              "proficiency": 3,
+              "blurb": "Certified and skilled in using Katalon for end-to-end test automation.",
+              "projects": []
+            }
+          ]
+        },
+        {
+          "name": "JavaScript Testing",
+          "proficiency": 3,
+          "blurb": "Experienced in testing frontend applications with modern JS tools.",
+          "projects": [],
+          "children": [
+            {
+              "name": "Cypress",
+              "proficiency": 3,
+              "blurb": "Used Cypress for end-to-end testing of user flows.",
+              "projects": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Platforms & DevOps",
+      "color": "#c084fc",
+      "children": [
+        {
+          "name": "Backend as a Service (BaaS)",
+          "proficiency": 3,
+          "blurb": "Proficient in leveraging BaaS for rapid application development.",
+          "children": [
+            {
+              "name": "Firebase & Firestore",
+              "proficiency": 3,
+              "blurb": "Used Firebase Auth and Firestore for real-time data and user management.",
+              "projects": [
+                {
+                  "name": "VIP Homework Dashboard",
+                  "url": "https://github.com/rickcedwhat/your-repo-link"
+                },
+                {
+                  "name": "Polyglot Wordle",
+                  "url": "https://polyglot-wordle.web.app/"
+                }
+              ]
+            },
+            {
+              "name": "Supabase",
+              "proficiency": 3,
+              "blurb": "Leveraged Supabase for its PostgreSQL database and auth features.",
+              "projects": []
+            }
+          ]
+        },
+        {
+          "name": "CI/CD & Hosting",
+          "proficiency": 3,
+          "blurb": "Experienced in setting up automated build and deployment pipelines.",
+          "children": [
+            {
+              "name": "Railway",
+              "proficiency": 2,
+              "blurb": "Familiar with deploying applications easily using Railway's infrastructure.",
+              "projects": []
+            },
+            {
+              "name": "Git & GitHub",
+              "proficiency": 4,
+              "blurb": "Expert-level Git user. Proficient with branching strategies (GitFlow) and pull requests.",
+              "projects": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
