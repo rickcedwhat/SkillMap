@@ -4,7 +4,7 @@ This project is a dynamic and interactive visualization of a personal skill set,
 
 The map is fully configured via a single JSON file, making it easy for anyone to fork this project and create their own skill map.
 
-![Skill Map Demo](https://i.imgur.com/uR13V8G.gif)
+![Skill Map Demo](image.png)
 *(You can replace this with a screenshot or GIF of your own skill map!)*
 
 ## Features
